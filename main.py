@@ -78,7 +78,6 @@ print(f"y_train {y_train}")
 
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
-print("********************")
 print()
 ilist = test_df.columns.tolist()
 ilist.remove('id')
@@ -98,7 +97,6 @@ EPOCHS = 100
 LEARNING_RATE = 0.0001
 INPUT_SHAPE = train_X.shape[1]
 
-print("********************")
 print(INPUT_SHAPE)
 #### Creating Modelwith Pytorch
 
@@ -149,11 +147,46 @@ train_dataset = torch.utils.data.TensorDataset(
     torch.tensor(train_X, dtype=torch.float32),
     torch.tensor(train_y.reshape(-1, 1), dtype=torch.float32)
 )
+"""
+<class 'torch.utils.data.dataset.TensorDataset'>
+(tensor([-0.7426,  1.0621, -0.5838,  0.0337, -0.7218,  0.8167, -0.3420, -0.6393]), tensor([14.]))
+(tensor([ 2.1400, -0.7027, -0.5838,  0.2119, -0.7218,  1.7241, -2.0100,  1.8321]), tensor([77.]))
+(tensor([-0.7028, -0.7027, -0.5838, -0.2201, -0.7218,  1.5685,  0.7848, -0.3393]), tensor([39.]))
+(tensor([-0.4745, -0.7027,  1.2258, -1.4569,  1.5270, -0.0545,  1.4962, -0.6964]), tensor([12.]))
+...
+"""
+# print("********************")
+# print(type(train_dataset))
+# for i in train_dataset:
+#     print(i)
+
+#epochs = 256, train_dataset total number 4325, there are 17 sets in total
 train_loader = torch.utils.data.DataLoader(
     train_dataset,
     batch_size=epochs,
     shuffle=True
 )
+"""
+batch
+<class 'torch.utils.data.dataloader.DataLoader'>
+[tensor([[ 0.6011,  1.5632, -0.5838,  ..., -0.6132, -0.1959, -0.6393],
+        [-1.2610, -0.7027,  2.4071,  ...,  0.8633,  0.1128, -0.3393],
+        [-1.0279, -0.7027,  1.7075,  ...,  0.1815,  0.4164,  0.0607],
+        ...,
+        [-0.1058,  1.5992, -0.5838,  ..., -0.7778, -0.6786,  0.5464],
+        [ 0.7186,  0.4219, -0.5838,  ..., -1.8136,  2.8123,  0.0607],
+        [ 0.0268,  0.6641, -0.5838,  ..., -0.7778, -1.2859,  0.5464]]), tensor([[43.],
+        [15.],
+        [42.],
+        [31.],
+        [44.],
+        [35.],
+        ...
+"""
+print("********************")
+print(type(train_loader))
+for i in train_loader:
+    print(len(i[0]),i)
 
 train_loss_list = []
 val_loss_list = []
@@ -168,6 +201,7 @@ for epoch in range(1, EPOCHS + 1):
     train_loss = 0
     train_metric = 0
     for i, (batch_x, batch_y) in enumerate(train_loader, 1):
+        print(i)
         # reset optimizer grad
         optimizer.zero_grad()
         # feed forward
