@@ -3,15 +3,10 @@
 # Press Shift+F10 to execute it or replace it with your code.
 # Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
 import pandas as pd
-import seaborn as sns
-import numpy as np
-
-
-
-inputnumber = 8
+inputnumber = 12
 train_df = pd.read_csv('train.csv')
 test_df = pd.read_csv('test.csv')
-test_Ans_df = pd.read_csv('sample_submission.csv')
+test_Ans_df = pd.read_csv('gender_submission.csv')
 print(type(train_df))
 print(train_df)
 combine = [train_df,test_df]
@@ -23,27 +18,89 @@ print(train_df.isnull().sum())
 print("Check isnull:")
 print(test_df.isnull().sum())
 
-# sns.pairplot(train_df,hue="Strength")
+mean_age = train_df['Age'].mean()
+train_df['Age'].fillna(value=mean_age, inplace=True)
+mean_age = test_df['Age'].mean()
+test_df['Age'].fillna(value=mean_age, inplace=True)
+
+print("Check isnull:")
+print(train_df.isnull().sum())
+print("Check isnull:")
+print(test_df.isnull().sum())
+
+# for dataset in combine:
+#     dataset.loc[ dataset['Age'] <= 16, 'Age'] = 0
+#     dataset.loc[(dataset['Age'] > 16) & (dataset['Age'] <= 32), 'Age'] = 1
+#     dataset.loc[(dataset['Age'] > 32) & (dataset['Age'] <= 48), 'Age'] = 2
+#     dataset.loc[(dataset['Age'] > 48) & (dataset['Age'] <= 64), 'Age'] = 3
+#     dataset.loc[ dataset['Age'] > 64, 'Age']
+# print("Check isnull:")
+# print(dataset.isnull().sum())
+#print(combine)
+
+
+modes = train_df.mode().iloc[0]            # Need to take the first elements because there can be multiple modes
+train_df.fillna(modes, inplace=True)       # Replace NaNs
+modes = test_df.mode().iloc[0]            # Need to take the first elements because there can be multiple modes
+test_df.fillna(modes, inplace=True)       # Replace NaNs
+
+print("Check isnull:")
+print(train_df.isnull().sum())
+print("Check isnull:")
+print(test_df.isnull().sum())
+import seaborn as sns
+import numpy as np
+
+# df['gender']=np.where(df['gender']=="Female",1,0)  #1:Female 0:Male
+# df['country']=np.where(df['country']=="France",0,df['country'])  #['France', 'Spain', 'Germany']
+# df['country']=np.where(df['country']=="Spain",1,df['country'])  #['France', 'Spain', 'Germany']
+# df['country']=np.where(df['country']=="Germany",2,df['country'])  #['France', 'Spain', 'Germany']
+# mylist = []
+# for i in df['country']:
+#     if i not in mylist:
+#         mylist.append(i)
+# print(mylist)
+
+print(train_df['Ticket'])
+print(train_df['Fare'])
+print(train_df.info())
+
+sns.pairplot(train_df,hue="Survived")
 ### plot the loss function
 import matplotlib.pyplot as plt
-# plt.show()
+
+plt.show()
+
+# One-hot encoding data
+def onehot_encode(df, column, prefix):
+    df = df.copy()
+    dummies = pd.get_dummies(df[column], prefix=prefix)
+    #dummies = pd.get_dummies(df,columns=[column])
+    df = pd.concat([df, dummies], axis=1)
+    df = df.drop(column, axis=1)
+    return df
+
+train_df = onehot_encode(train_df, 'Sex','Sex')
+train_df = onehot_encode(train_df, 'Pclass','Pclass')
+train_df = onehot_encode(train_df, 'Embarked','Embarked')
+test_df = onehot_encode(test_df, 'Sex','Sex')
+test_df = onehot_encode(test_df, 'Pclass','Pclass')
+test_df = onehot_encode(test_df, 'Embarked','Embarked')
+
+print(train_df.head())
 
 
-X_train = train_df.drop(["id","Strength"], axis=1).values### independent features
-y_train = train_df["Strength"].values
-X_test  = test_df.drop(["id"], axis=1).copy().values
-y_test  = test_Ans_df.drop(["id"], axis=1).copy().values
 
-print(type(X_train))
-print(type(y_train))
-
+X_train = train_df.drop(["Survived","PassengerId","Name","Ticket","Cabin"], axis=1).values### independent features
+y_train = train_df["Survived"].values
+X_test  = test_df.drop(["PassengerId","Name","Ticket","Cabin"], axis=1).copy().values
+y_test  = test_Ans_df.drop(["PassengerId"], axis=1).copy().values
 #### Libraries From Pytorch
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-device = 'cuda' if torch.cuda.is_available() else 'cpu'
-
+print("********************")
 print(type(X_train))
 print(type(y_train))
 print(X_train)
@@ -71,37 +128,10 @@ tensor([[7.0000e+00,...
 print(f"y_train {y_train}")
 
 
-
-
-
-
-
-from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import train_test_split
-print()
-ilist = test_df.columns.tolist()
-ilist.remove('id')
-print(ilist)
-
-#X, y = train_df[ilist].values, train_df['Strength'].values
-X, y = X_train , y_train
-
-sc = StandardScaler()
-sc.fit(X)
-X = sc.transform(X)
-train_X, val_X, train_y, val_y = train_test_split(X, y, shuffle=True, test_size=0.2)
-print(type(train_X))
-print(val_X)
-epochs=256
-EPOCHS = 100
-LEARNING_RATE = 0.0001
-INPUT_SHAPE = train_X.shape[1]
-
-print(INPUT_SHAPE)
 #### Creating Modelwith Pytorch
 
 class ANN_Model(nn.Module):
-    def __init__(self,input_features=inputnumber,hidden1=64,hidden2=32,hidden3=20,out_features=1):
+    def __init__(self,input_features=inputnumber,hidden1=10,hidden2=10,hidden3=20,out_features=2):
         super().__init__()
         self.f_connected1=nn.Linear(input_features,hidden1)
         self.f_connected2=nn.Linear(hidden1,hidden2)
@@ -114,189 +144,88 @@ class ANN_Model(nn.Module):
         x=self.out(x)
         #x = F.log_softmax(self.out(x), dim=1)
         return x
-
-# class ANN_Model(nn.Module):
-#     def __init__(self,INPUT_SHAPE=inputnumber,hidden1=64,hidden2=32,out_features=1):
-#         super().__init__()
-#         self.linear_layers = torch.nn.Sequential(
-#             torch.nn.Linear(INPUT_SHAPE, hidden1),
-#             torch.nn.ReLU(),
-#             torch.nn.Linear(hidden1, hidden2),
-#             torch.nn.ReLU(),
-#         )
-#         self.output_layer = torch.nn.Linear(hidden2, out_features)
-#     def forward(self, x):
-#         x = self.linear_layers(x)
-#         y = self.output_layer(x)
-#         return y
-
-    ####instantiate my ANN_model
-
-
+####instantiate my ANN_model
 torch.manual_seed(20)
-torch_model = ANN_Model()
+model=ANN_Model()
 print("model.parameters")
-print(torch_model.parameters)
+print(model.parameters)
 
 ###Backward Propogation-- Define the loss_function,define the optimizer
-criterion=torch.nn.MSELoss()
-optimizer = torch.optim.SGD(torch_model.parameters(), lr=LEARNING_RATE)
-#optimizer=torch.optim.Adam(model.parameters(),lr=0.005)
+loss_function=nn.CrossEntropyLoss()
+optimizer=torch.optim.Adam(model.parameters(),lr=0.005)
 
-train_dataset = torch.utils.data.TensorDataset(
-    torch.tensor(train_X, dtype=torch.float32),
-    torch.tensor(train_y.reshape(-1, 1), dtype=torch.float32)
-)
-"""
-<class 'torch.utils.data.dataset.TensorDataset'>
-(tensor([-0.7426,  1.0621, -0.5838,  0.0337, -0.7218,  0.8167, -0.3420, -0.6393]), tensor([14.]))
-(tensor([ 2.1400, -0.7027, -0.5838,  0.2119, -0.7218,  1.7241, -2.0100,  1.8321]), tensor([77.]))
-(tensor([-0.7028, -0.7027, -0.5838, -0.2201, -0.7218,  1.5685,  0.7848, -0.3393]), tensor([39.]))
-(tensor([-0.4745, -0.7027,  1.2258, -1.4569,  1.5270, -0.0545,  1.4962, -0.6964]), tensor([12.]))
-...
-"""
-# print("********************")
-# print(type(train_dataset))
-# for i in train_dataset:
-#     print(i)
-
-#epochs = 256, train_dataset total number 4325, there are 17 sets in total
-train_loader = torch.utils.data.DataLoader(
-    train_dataset,
-    batch_size=epochs,
-    shuffle=True
-)
-"""
-batch
-<class 'torch.utils.data.dataloader.DataLoader'>
-[tensor([[ 0.6011,  1.5632, -0.5838,  ..., -0.6132, -0.1959, -0.6393],
-        [-1.2610, -0.7027,  2.4071,  ...,  0.8633,  0.1128, -0.3393],
-        [-1.0279, -0.7027,  1.7075,  ...,  0.1815,  0.4164,  0.0607],
-        ...,
-        [-0.1058,  1.5992, -0.5838,  ..., -0.7778, -0.6786,  0.5464],
-        [ 0.7186,  0.4219, -0.5838,  ..., -1.8136,  2.8123,  0.0607],
-        [ 0.0268,  0.6641, -0.5838,  ..., -0.7778, -1.2859,  0.5464]]), tensor([[43.],
-        [15.],
-        [42.],
-        [31.],
-        [44.],
-        [35.],
-        ...
-"""
-print("********************")
-print(type(train_loader))
-for i in train_loader:
-    print(len(i[0]),i)
-
-train_loss_list = []
-val_loss_list = []
-train_metric_list = []
-val_metric_list = []
-
-
-
-for epoch in range(1, EPOCHS + 1):
-    # training mode
-    torch_model.train()
-    train_loss = 0
-    train_metric = 0
-    for i, (batch_x, batch_y) in enumerate(train_loader, 1):
-        print(i)
-        # reset optimizer grad
-        optimizer.zero_grad()
-        # feed forward
-        outputs = torch_model(batch_x)
-        # get loss
-        loss = criterion(outputs, batch_y)
-        # get loss values from tensor
-        train_loss += loss.item()
-        # backward calculation
-        loss.backward()
-        # update weight parameters
-        optimizer.step()
-    # get average loss and metric
-    train_loss = train_loss / i
-    train_metric = np.sqrt(train_loss)  # root mean squared error
-
-    # validation mode
-    torch_model.eval()
-    with torch.no_grad():
-        outputs = torch_model(torch.tensor(val_X, dtype=torch.float32, device=device))
-        loss = criterion(outputs, torch.tensor(val_y, dtype=torch.float32, device=device))
-        val_loss = loss.item()  # / val_X.shape[0]
-        val_metric = np.sqrt(val_loss)
-
-    print(
-        f'Epoch [{epoch}/{EPOCHS}], loss: {train_loss:.4f}, val_loss: {val_loss:.4f}, root_mean_squared_error: {train_metric:.4f}, val_root_mean_squared_error: {val_metric:.4f}')
-    train_loss_list.append(train_loss)
-    train_metric_list.append(train_metric)
-    val_loss_list.append(val_loss)
-    val_metric_list.append(val_metric)
-
-# plt.plot(range(1, len(train_loss_list) + 1), train_loss_list, label='train')
-# plt.plot(range(1, len(val_loss_list) + 1), val_loss_list, label='val')
-# plt.title('Loss History', fontsize=20)
-# plt.xlabel('Epoch', fontsize=15)
-# plt.ylabel('Loss', fontsize=15)
-# plt.legend()
-# plt.show
-#
-# plt.plot(range(1, len(train_metric_list) + 1), train_metric_list, label='train')
-# plt.plot(range(1, len(val_metric_list) + 1), val_metric_list, label='val')
-# plt.title('Validation Function History', fontsize=20)
-# plt.xlabel('Epoch', fontsize=15)
-# plt.ylabel('Root Mean Squared Error', fontsize=15)
-# plt.legend()
-# plt.show
-#
-# y_pred = torch_model(torch.tensor(val_X, dtype=torch.float32, device=device)).cpu().detach().numpy().reshape(-1)
-# y_true = val_y
-# print(y_pred)
-# print(y_true)
-# residual = y_pred - y_true
-# plt.scatter(y_true, residual, s=3, alpha=0.5)
-# plt.title('Plot Residual', fontsize=20)
-# plt.xlabel('true price', fontsize=15)
-# plt.ylabel('residual', fontsize=15)
-# plt.show()
-
-
-
-test_X = sc.transform(X_test)
-test_X = torch.FloatTensor(test_X)
-with torch.no_grad():
-    test_result = torch_model(test_X)
-
-print(test_result)
-
-Strength = test_result[:,0].numpy()
-print(Strength)
-submission = pd.DataFrame({'id':  test_df.id, 'Strength': Strength})
-submission.to_csv('submission.csv', index=False)
-
-
-
-
-
-# final_losses=[]
-# for i in range(epochs):
-#     i=i+1
-#     optimizer.zero_grad()
-#
-#     y_pred=model.forward(X_train)
-#     # print("Epoch number: {} /// {} {}".format(i, y_pred, y_train))
-#     loss=loss_function(y_pred,y_train)
-#     final_losses.append(loss.item())
-#     if i%10==1:
-#         #print("Epoch number: {} and the loss : {} /// {} {}".format(i,loss.item(),y_pred,y_train))
-#         print("Epoch number: {} and the loss : {} ".format(i,loss.item()))
-#
-#     loss.backward()
-#     optimizer.step()
+epochs=5000
+final_losses=[]
+for i in range(epochs):
+    i=i+1
+    y_pred=model.forward(X_train)
+    # print("Epoch number: {} /// {} {}".format(i, y_pred, y_train))
+    loss=loss_function(y_pred,y_train)
+    final_losses.append(loss.item())
+    if i%10==1:
+        #print("Epoch number: {} and the loss : {} /// {} {}".format(i,loss.item(),y_pred,y_train))
+        print("Epoch number: {} and the loss : {} ".format(i,loss.item()))
+    optimizer.zero_grad()
+    loss.backward()
+    optimizer.step()
 ###--------------------------------------------
 
 
 
+### plot the loss function
+import matplotlib.pyplot as plt
+
+plt.plot(range(epochs),final_losses)
+plt.ylabel('Loss')
+plt.xlabel('Epoch')
+plt.show()
+
+#### Prediction In X_test data
+predictions=[]
+with torch.no_grad():
+    for i,data in enumerate(X_test):
+        y_pred=model(data)
+        #print(y_pred.argmax()) #y_pred.argmax() find out the index of maximum value
+        predictions.append(y_pred.argmax().item())
+        #print(y_pred.argmax().item())
+
+from sklearn.metrics import confusion_matrix
+cm=confusion_matrix(y_test,predictions)
+print("cm")
+print(cm)
+# print("Anser:")
+# print(y_test)
+# print(predictions)
+
+plt.figure(figsize=(10,6))
+sns.heatmap(cm,annot=True)
+plt.xlabel('Actual Values')
+plt.ylabel('Predicted Values')
+plt.show()
+
+from sklearn.metrics import accuracy_score
+score=accuracy_score(y_test,predictions)
+print(score)
+
+print(model.eval())
+print("model.parameters")
+print(model.parameters)
+print("model.parameters")
+
+for param in model.parameters():
+    print("****")
+    print(param)
+
+###*********************************************
+X_test_var = torch.FloatTensor(X_test)
+with torch.no_grad():
+    test_result = model(X_test_var)
+values, labels = torch.max(test_result, 1)
+survived = labels.data.numpy()
+submission = pd.DataFrame({'PassengerId':  test_df.PassengerId, 'Survived': survived})
+submission.to_csv('submission.csv', index=False)
+
+###*********************************************
 
 def print_hi(name):
     # Use a breakpoint in the code line below to debug your script.
