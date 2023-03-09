@@ -183,10 +183,10 @@ batch
         [35.],
         ...
 """
-print("********************")
-print(type(train_loader))
-for i in train_loader:
-    print(len(i[0]),i)
+# print("********************")
+# print(type(train_loader))
+# for i in train_loader:
+#     print(len(i[0]),i)
 
 train_loss_list = []
 val_loss_list = []
@@ -201,7 +201,6 @@ for epoch in range(1, EPOCHS + 1):
     train_loss = 0
     train_metric = 0
     for i, (batch_x, batch_y) in enumerate(train_loader, 1):
-        print(i)
         # reset optimizer grad
         optimizer.zero_grad()
         # feed forward
@@ -269,11 +268,23 @@ with torch.no_grad():
 
 print(test_result)
 
-Strength = test_result[:,0].numpy()
-print(Strength)
-submission = pd.DataFrame({'id':  test_df.id, 'Strength': Strength})
-submission.to_csv('submission.csv', index=False)
+print(torch_model.eval())
+print("model.parameters")
+print(torch_model.parameters)
+print("model.parameters")
 
+for param in torch_model.parameters():
+    print("****")
+    print(param)
+
+
+###*********************************************
+# Strength = test_result[:,0].numpy()
+# print(Strength)
+# submission = pd.DataFrame({'id':  test_df.id, 'Strength': Strength})
+# submission.to_csv('submission.csv', index=False)
+
+###*********************************************
 
 
 
