@@ -12,9 +12,29 @@ inputnumber = 8
 train_df = pd.read_csv('train.csv')
 test_df = pd.read_csv('test.csv')
 test_Ans_df = pd.read_csv('sample_submission.csv')
+
 print(type(train_df))
 print(train_df)
-combine = [train_df,test_df]
+y = train_df['Strength']
+for col in train_df.columns:
+    mean = train_df[col].mean()
+    std = train_df[col].std()
+    cut_off = std * 3
+
+    # Set the limits
+    upper_limit = mean + cut_off
+    lower_limit = mean - cut_off
+
+    # Replace outliers with nan values
+    train_df.loc[(train_df[col] > upper_limit) | (train_df[col] < lower_limit), [col]] = np.nan
+
+print(train_df.isna().sum())
+print(train_df.shape)
+train_df.dropna(how = 'any', inplace =True)
+#y = y.loc[train_df.index]
+print(train_df.shape)
+
+
 print(train_df.columns.values)
 print(train_df.head())
 
@@ -24,8 +44,8 @@ print("Check isnull:")
 print(test_df.isnull().sum())
 
 # sns.pairplot(train_df,hue="Strength")
-### plot the loss function
-import matplotlib.pyplot as plt
+# ### plot the loss function
+# import matplotlib.pyplot as plt
 # plt.show()
 
 
@@ -73,9 +93,6 @@ print(f"y_train {y_train}")
 
 
 
-
-
-
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 print()
@@ -93,12 +110,13 @@ train_X, val_X, train_y, val_y = train_test_split(X, y, shuffle=True, test_size=
 print(type(train_X))
 print(val_X)
 epochs=256
-EPOCHS = 100
+EPOCHS = 1000
 LEARNING_RATE = 0.0001
 INPUT_SHAPE = train_X.shape[1]
 
 print(INPUT_SHAPE)
 #### Creating Modelwith Pytorch
+# Epoch [200/200], loss: 156.2308, val_loss: 374.1711, root_mean_squared_error: 12.4992, val_root_mean_squared_error: 19.3435
 
 class ANN_Model(nn.Module):
     def __init__(self,input_features=inputnumber,hidden1=64,hidden2=32,hidden3=20,out_features=1):
@@ -279,10 +297,10 @@ for param in torch_model.parameters():
 
 
 ###*********************************************
-# Strength = test_result[:,0].numpy()
-# print(Strength)
-# submission = pd.DataFrame({'id':  test_df.id, 'Strength': Strength})
-# submission.to_csv('submission.csv', index=False)
+Strength = test_result[:,0].numpy()
+print(Strength)
+submission = pd.DataFrame({'id':  test_df.id, 'Strength': Strength})
+submission.to_csv('submission.csv', index=False)
 
 ###*********************************************
 
